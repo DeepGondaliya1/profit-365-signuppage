@@ -12,7 +12,10 @@
     "next": "14.0.4",
     "react": "^18",
     "react-dom": "^18",
-    "next-themes": "^0.2.1"
+    "next-themes": "^0.2.1",
+    "react-phone-input-2": "^2.15.1",
+    "react-icons": "^4.12.0",
+    "country-flag-icons": "^1.5.7"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -20,6 +23,9 @@
     "@types/react-dom": "^18",
     "eslint": "^8",
     "eslint-config-next": "14.0.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "tailwindcss": "^3.3.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.31"
   }
 }

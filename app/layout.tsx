@@ -2,8 +2,11 @@ import { ThemeProvider } from './providers'
 import './globals.css'
 
 export const metadata = {
-  title: 'Profit 365 - Signup',
-  description: 'Profit 365 User Signup Page',
+  title: 'Profit 365 Signup Page',
+  description: 'Profit 365 Signup page',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({

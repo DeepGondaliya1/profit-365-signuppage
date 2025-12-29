@@ -10,6 +10,7 @@ module.exports = {
     extend: {
       colors: {
         'custom-bg': '#ebe8e3',
+        'custom-text': '#ebe8e3',
       },
     },
   },

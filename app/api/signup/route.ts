@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    // Validate phone number for WhatsApp/Telegram
     if ((body.subscriptionPrefs.includes('whatsapp') || body.subscriptionPrefs.includes('telegram')) && !body.phoneNumber) {
       return NextResponse.json(
         { error: 'Phone number is required for WhatsApp/Telegram subscription' },
@@ -26,9 +27,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate email for email preference
+    if (body.subscriptionPrefs.includes('email') && !body.email) {
+      return NextResponse.json(
+        { error: 'Email is required for email subscription' },
+        { status: 400 }
+      )
+    }
+
     // Transform data to match backend format
-    let channelPreference: 'whatsapp' | 'telegram' | 'both'
-    if (body.subscriptionPrefs.includes('whatsapp') && body.subscriptionPrefs.includes('telegram')) {
+    let channelPreference: 'whatsapp' | 'telegram' | 'both' | 'email'
+    let phoneNumber = body.phoneNumber
+    
+    if (body.subscriptionPrefs.includes('email')) {
+      channelPreference = 'email'
+      // Use dummy phone number for email-only users
+      phoneNumber = '+99900000000'
+    } else if (body.subscriptionPrefs.includes('whatsapp') && body.subscriptionPrefs.includes('telegram')) {
       channelPreference = 'both'
     } else if (body.subscriptionPrefs.includes('whatsapp')) {
       channelPreference = 'whatsapp'
@@ -39,7 +54,7 @@ export async function POST(request: NextRequest) {
     const backendData = {
       preferredName: body.fullName || undefined,
       email: body.email || undefined,
-      phoneNumber: body.phoneNumber.startsWith('+') ? body.phoneNumber : `+${body.phoneNumber}`,
+      phoneNumber: phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`,
       channelPreference,
       interests: body.selectedInterestIds
     }

@@ -6,7 +6,7 @@ import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import { FaWhatsapp, FaTelegram } from 'react-icons/fa'
 import { MdEmail } from 'react-icons/md'
-import { US, CA, IN, CN, JP, HK, KR, GB, EU } from 'country-flag-icons/react/3x2'
+import * as CountryFlags from 'country-flag-icons/react/3x2'
 
 interface Interest {
   id: string;
@@ -43,6 +43,7 @@ export default function Home() {
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [stepErrors, setStepErrors] = useState<{[key: number]: string}>({})
 
   useEffect(() => {
     setMounted(true)
@@ -59,19 +60,7 @@ export default function Home() {
       
       if (response.ok && Array.isArray(data)) {
         console.log('Raw backend data:', data)
-        
-        const allowedParentTypes = ['Canada', 'United States', 'Crypto', 'India', 'Waitlist']
-        
-        // Transform the data to match expected structure
-        const processedData = [{
-          mainType: 'List',
-          parentTypes: data.filter((item: ParentType) => 
-            allowedParentTypes.includes(item.parentType)
-          )
-        }]
-        
-        console.log('Final processed data:', processedData)
-        setBackendInterests(processedData)
+        setBackendInterests(data)
       } else {
         console.error('API Error:', data)
         setBackendInterests([])
@@ -92,39 +81,41 @@ export default function Home() {
     const listGroup = backendInterests.find(group => group.mainType === 'List')
     if (!listGroup) return { markets: [], waitlistMarkets: [] }
     
+    const allowedParentTypes = ['Crypto', 'India', 'United States', 'Canada', 'Waitlist']
     const markets: any[] = []
     const waitlistMarkets: any[] = []
     
-    listGroup.parentTypes.forEach(parent => {
-      const marketData = {
-        id: parent.parentType.toLowerCase().replace(/\s+/g, '-'),
-        name: getMarketDisplayName(parent.parentType),
-        parentType: parent.parentType,
-        interests: parent.subcategories,
-        description: getMarketDescription(parent.parentType)
-      }
-      
-      if (parent.parentType === 'Waitlist') {
-        // Split waitlist items into separate markets
-        parent.subcategories.forEach(interest => {
-          waitlistMarkets.push({
-            id: interest.name.toLowerCase().replace(/\s+/g, '-'),
-            name: interest.name,
-            parentType: parent.parentType,
-            interests: [interest],
-            description: 'Leading Stocks, ETFs, Forex & Market News',
-            flag: getMarketFlag(interest.name)
+    listGroup.parentTypes
+      .filter(parent => allowedParentTypes.includes(parent.parentType))
+      .forEach(parent => {
+        const marketData = {
+          id: parent.parentType.toLowerCase().replace(/\s+/g, '-'),
+          name: getMarketDisplayName(parent.parentType),
+          parentType: parent.parentType,
+          interests: parent.subcategories,
+          description: getMarketDescription(parent.parentType)
+        }
+        
+        if (parent.parentType === 'Waitlist') {
+          parent.subcategories.forEach(interest => {
+            waitlistMarkets.push({
+              id: interest.name.toLowerCase().replace(/\s+/g, '-'),
+              name: interest.name,
+              parentType: parent.parentType,
+              interests: [interest],
+              description: 'Leading Stocks, ETFs, Forex & Market News',
+              flag: getMarketFlag(interest.name)
+            })
           })
-        })
-      } else {
-        markets.push({
-          ...marketData,
-          flag: getMarketFlag(parent.parentType),
-          icon: parent.parentType === 'Crypto' ? '₿' : undefined,
-          color: parent.parentType === 'Crypto' ? 'from-orange-500 to-orange-600' : undefined
-        })
-      }
-    })
+        } else {
+          markets.push({
+            ...marketData,
+            flag: getMarketFlag(parent.parentType),
+            icon: parent.parentType === 'Crypto' ? '₿' : undefined,
+            color: parent.parentType === 'Crypto' ? 'from-orange-500 to-orange-600' : undefined
+          })
+        }
+      })
     
     return { markets, waitlistMarkets }
   }
@@ -150,18 +141,57 @@ export default function Home() {
   }
   
   const getMarketFlag = (name: string) => {
-    switch (name) {
-      case 'United States': return <US className="w-10 h-8 rounded shadow-sm" />
-      case 'India': return <IN className="w-10 h-8 rounded shadow-sm" />
-      case 'Canada': return <CA className="w-10 h-8 rounded shadow-sm" />
-      case 'China': return <CN className="w-10 h-8 rounded shadow-sm" />
-      case 'Japan': return <JP className="w-10 h-8 rounded shadow-sm" />
-      case 'Hong Kong': return <HK className="w-10 h-8 rounded shadow-sm" />
-      case 'South Korea': return <KR className="w-10 h-8 rounded shadow-sm" />
-      case 'United Kingdom': return <GB className="w-10 h-8 rounded shadow-sm" />
-      case 'Euro': return <EU className="w-10 h-8 rounded shadow-sm" />
-      default: return null
+    // Comprehensive country name to ISO code mapping
+    const countryMapping: { [key: string]: string } = {
+      'Afghanistan': 'AF', 'Albania': 'AL', 'Algeria': 'DZ', 'Andorra': 'AD', 'Angola': 'AO',
+      'Argentina': 'AR', 'Armenia': 'AM', 'Australia': 'AU', 'Austria': 'AT', 'Azerbaijan': 'AZ',
+      'Bahamas': 'BS', 'Bahrain': 'BH', 'Bangladesh': 'BD', 'Barbados': 'BB', 'Belarus': 'BY',
+      'Belgium': 'BE', 'Belize': 'BZ', 'Benin': 'BJ', 'Bhutan': 'BT', 'Bolivia': 'BO',
+      'Bosnia and Herzegovina': 'BA', 'Botswana': 'BW', 'Brazil': 'BR', 'Brunei': 'BN', 'Bulgaria': 'BG',
+      'Burkina Faso': 'BF', 'Burundi': 'BI', 'Cambodia': 'KH', 'Cameroon': 'CM', 'Canada': 'CA',
+      'Cape Verde': 'CV', 'Central African Republic': 'CF', 'Chad': 'TD', 'Chile': 'CL', 'China': 'CN',
+      'Colombia': 'CO', 'Comoros': 'KM', 'Congo': 'CG', 'Costa Rica': 'CR', 'Croatia': 'HR',
+      'Cuba': 'CU', 'Cyprus': 'CY', 'Czech Republic': 'CZ', 'Denmark': 'DK', 'Djibouti': 'DJ',
+      'Dominica': 'DM', 'Dominican Republic': 'DO', 'Ecuador': 'EC', 'Egypt': 'EG', 'El Salvador': 'SV',
+      'Equatorial Guinea': 'GQ', 'Eritrea': 'ER', 'Estonia': 'EE', 'Ethiopia': 'ET', 'Fiji': 'FJ',
+      'Finland': 'FI', 'France': 'FR', 'Gabon': 'GA', 'Gambia': 'GM', 'Georgia': 'GE',
+      'Germany': 'DE', 'Ghana': 'GH', 'Greece': 'GR', 'Grenada': 'GD', 'Guatemala': 'GT',
+      'Guinea': 'GN', 'Guinea-Bissau': 'GW', 'Guyana': 'GY', 'Haiti': 'HT', 'Honduras': 'HN',
+      'Hong Kong': 'HK', 'Hungary': 'HU', 'Iceland': 'IS', 'India': 'IN', 'Indonesia': 'ID',
+      'Iran': 'IR', 'Iraq': 'IQ', 'Ireland': 'IE', 'Israel': 'IL', 'Italy': 'IT',
+      'Jamaica': 'JM', 'Japan': 'JP', 'Jordan': 'JO', 'Kazakhstan': 'KZ', 'Kenya': 'KE',
+      'Kiribati': 'KI', 'Kuwait': 'KW', 'Kyrgyzstan': 'KG', 'Laos': 'LA', 'Latvia': 'LV',
+      'Lebanon': 'LB', 'Lesotho': 'LS', 'Liberia': 'LR', 'Libya': 'LY', 'Liechtenstein': 'LI',
+      'Lithuania': 'LT', 'Luxembourg': 'LU', 'Madagascar': 'MG', 'Malawi': 'MW', 'Malaysia': 'MY',
+      'Maldives': 'MV', 'Mali': 'ML', 'Malta': 'MT', 'Marshall Islands': 'MH', 'Mauritania': 'MR',
+      'Mauritius': 'MU', 'Mexico': 'MX', 'Micronesia': 'FM', 'Moldova': 'MD', 'Monaco': 'MC',
+      'Mongolia': 'MN', 'Montenegro': 'ME', 'Morocco': 'MA', 'Mozambique': 'MZ', 'Myanmar': 'MM',
+      'Namibia': 'NA', 'Nauru': 'NR', 'Nepal': 'NP', 'Netherlands': 'NL', 'New Zealand': 'NZ',
+      'Nicaragua': 'NI', 'Niger': 'NE', 'Nigeria': 'NG', 'North Korea': 'KP', 'North Macedonia': 'MK',
+      'Norway': 'NO', 'Oman': 'OM', 'Pakistan': 'PK', 'Palau': 'PW', 'Panama': 'PA',
+      'Papua New Guinea': 'PG', 'Paraguay': 'PY', 'Peru': 'PE', 'Philippines': 'PH', 'Poland': 'PL',
+      'Portugal': 'PT', 'Qatar': 'QA', 'Romania': 'RO', 'Russia': 'RU', 'Rwanda': 'RW',
+      'Saint Kitts and Nevis': 'KN', 'Saint Lucia': 'LC', 'Saint Vincent and the Grenadines': 'VC',
+      'Samoa': 'WS', 'San Marino': 'SM', 'Saudi Arabia': 'SA', 'Senegal': 'SN', 'Serbia': 'RS',
+      'Seychelles': 'SC', 'Sierra Leone': 'SL', 'Singapore': 'SG', 'Slovakia': 'SK', 'Slovenia': 'SI',
+      'Solomon Islands': 'SB', 'Somalia': 'SO', 'South Africa': 'ZA', 'South Korea': 'KR', 'South Sudan': 'SS',
+      'Spain': 'ES', 'Sri Lanka': 'LK', 'Sudan': 'SD', 'Suriname': 'SR', 'Sweden': 'SE',
+      'Switzerland': 'CH', 'Syria': 'SY', 'Taiwan': 'TW', 'Tajikistan': 'TJ', 'Tanzania': 'TZ',
+      'Thailand': 'TH', 'Timor-Leste': 'TL', 'Togo': 'TG', 'Tonga': 'TO', 'Trinidad and Tobago': 'TT',
+      'Tunisia': 'TN', 'Turkey': 'TR', 'Turkmenistan': 'TM', 'Tuvalu': 'TV', 'Uganda': 'UG',
+      'Ukraine': 'UA', 'United Arab Emirates': 'AE', 'United Kingdom': 'GB', 'United States': 'US',
+      'Uruguay': 'UY', 'Uzbekistan': 'UZ', 'Vanuatu': 'VU', 'Vatican City': 'VA', 'Venezuela': 'VE',
+      'Vietnam': 'VN', 'Yemen': 'YE', 'Zambia': 'ZM', 'Zimbabwe': 'ZW', 'Europe': 'EU'
     }
+    
+    const countryCode = countryMapping[name]
+    if (!countryCode) return null
+    
+    // Dynamically get the flag component
+    const FlagComponent = (CountryFlags as any)[countryCode]
+    if (!FlagComponent) return null
+    
+    return <FlagComponent className="w-10 h-8 rounded shadow-sm" />
   }
   
   const { markets, waitlistMarkets } = getMarketData()
@@ -194,14 +224,28 @@ export default function Home() {
   }
 
   const handleSubscriptionToggle = (pref: string) => {
-    setSubscriptionPrefs(prev => 
-      prev.includes(pref) 
-        ? prev.filter(p => p !== pref)
-        : [...prev, pref]
-    )
+    // Only allow single selection
+    setSubscriptionPrefs([pref])
+    setStepErrors(prev => ({ ...prev, 2: '' }))
   }
 
   const nextStep = () => {
+    setStepErrors({})
+    
+    if (currentStep === 1) {
+      if (selectedMarkets.length === 0) {
+        setStepErrors({ 1: 'Please select at least one market' })
+        return
+      }
+    }
+    
+    if (currentStep === 2) {
+      if (subscriptionPrefs.length === 0) {
+        setStepErrors({ 2: 'Please select a subscription preference' })
+        return
+      }
+    }
+    
     if (currentStep < 3) setCurrentStep(currentStep + 1)
   }
 
@@ -385,6 +429,12 @@ export default function Home() {
         </div>
       )}
 
+      {stepErrors[1] && (
+        <div className="bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl p-4 mb-6">
+          <p className="text-red-800 dark:text-red-300">{stepErrors[1]}</p>
+        </div>
+      )}
+
       <div className="flex justify-end">
         <button
           onClick={nextStep}
@@ -407,10 +457,34 @@ export default function Home() {
       </div>
 
       <div className="flex justify-center">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl w-full">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full">
+          <div
+            onClick={() => handleSubscriptionToggle('email')}
+            className={`relative rounded-xl p-8 cursor-pointer transition-all duration-200 text-center shadow-lg hover:shadow-xl min-h-[180px] ${
+              subscriptionPrefs.includes('email')
+                ? 'bg-teal-200/20 border-2 border-teal-500 dark:bg-teal-900/20'
+                : theme === 'dark' 
+                  ? 'bg-gray-800 hover:bg-gray-700' 
+                  : 'bg-gray-100 hover:bg-gray-50'
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={subscriptionPrefs.includes('email')}
+              onChange={() => handleSubscriptionToggle('email')}
+              className="absolute top-4 right-4 w-6 h-6 text-teal-600 border-2 border-teal-400 rounded focus:ring-teal-500 accent-teal-600"
+            />
+            <div className="flex flex-col items-center gap-4">
+              <MdEmail className="text-7xl text-gray-500" />
+              <h3 className={`font-semibold text-lg ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+                Email
+              </h3>
+            </div>
+          </div>
+
           <div
             onClick={() => handleSubscriptionToggle('whatsapp')}
-            className={`relative rounded-xl p-12 cursor-pointer transition-all duration-200 text-center shadow-lg hover:shadow-xl min-h-[200px] ${
+            className={`relative rounded-xl p-8 cursor-pointer transition-all duration-200 text-center shadow-lg hover:shadow-xl min-h-[180px] ${
               subscriptionPrefs.includes('whatsapp')
                 ? 'bg-teal-200/20 border-2 border-teal-500 dark:bg-teal-900/20'
                 : theme === 'dark' 
@@ -422,11 +496,11 @@ export default function Home() {
               type="checkbox"
               checked={subscriptionPrefs.includes('whatsapp')}
               onChange={() => handleSubscriptionToggle('whatsapp')}
-              className="absolute top-4 right-4 w-6 h-6 text-teal-600 border-2 border-teal-300 rounded focus:ring-teal-500 accent-teal-600"
+              className="absolute top-4 right-4 w-6 h-6 text-teal-600 border-2 border-teal-400 rounded focus:ring-teal-500 accent-teal-600"
             />
-            <div className="flex flex-col items-center gap-6">
-              <FaWhatsapp className="text-6xl text-green-500" />
-              <h3 className={`font-semibold text-xl ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+            <div className="flex flex-col items-center gap-4">
+              <FaWhatsapp className="text-7xl text-green-500" />
+              <h3 className={`font-semibold text-lg ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
                 WhatsApp
               </h3>
             </div>
@@ -434,7 +508,7 @@ export default function Home() {
 
           <div
             onClick={() => handleSubscriptionToggle('telegram')}
-            className={`relative rounded-xl p-12 cursor-pointer transition-all duration-200 text-center shadow-lg hover:shadow-xl min-h-[200px] ${
+            className={`relative rounded-xl p-8 cursor-pointer transition-all duration-200 text-center shadow-lg hover:shadow-xl min-h-[180px] ${
               subscriptionPrefs.includes('telegram')
                 ? 'bg-teal-200/20 border-2 border-teal-500 dark:bg-teal-900/20'
                 : theme === 'dark' 
@@ -446,17 +520,23 @@ export default function Home() {
               type="checkbox"
               checked={subscriptionPrefs.includes('telegram')}
               onChange={() => handleSubscriptionToggle('telegram')}
-              className="absolute top-4 right-4 w-6 h-6 text-teal-600 border-2 border-teal-300 rounded focus:ring-teal-500 accent-teal-600"
+              className="absolute top-4 right-4 w-6 h-6 text-teal-600 border-2 border-teal-400 rounded focus:ring-teal-500 accent-teal-600"
             />
-            <div className="flex flex-col items-center gap-6">
-              <FaTelegram className="text-6xl text-blue-500" />
-              <h3 className={`font-semibold text-xl ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+            <div className="flex flex-col items-center gap-4">
+              <FaTelegram className="text-7xl text-blue-500" />
+              <h3 className={`font-semibold text-lg ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
                 Telegram
               </h3>
             </div>
           </div>
         </div>
       </div>
+
+      {stepErrors[2] && (
+        <div className="bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl p-4">
+          <p className="text-red-800 dark:text-red-300">{stepErrors[2]}</p>
+        </div>
+      )}
 
       <div className="flex justify-between">
         <button
@@ -521,6 +601,25 @@ export default function Home() {
         )}
 
         <div className="space-y-6">
+          {subscriptionPrefs.includes('email') && (
+            <div className="space-y-2">
+              <label className={`block text-lg font-semibold ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+                Email <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
+                placeholder="your.email@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={`w-full h-[52px] px-4 text-base border rounded-xl transition-all duration-200 ${
+                  theme === 'dark' 
+                    ? 'border-gray-600 bg-gray-800 text-white placeholder-gray-400' 
+                    : 'border-gray-300 bg-white text-gray-900 placeholder-gray-500'
+                }`}
+              />
+            </div>
+          )}
+
           {(subscriptionPrefs.includes('whatsapp') || subscriptionPrefs.includes('telegram')) && (
             <div className="space-y-2">
               <label className={`block text-lg font-semibold ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
@@ -546,25 +645,6 @@ export default function Home() {
                   backgroundColor: theme === 'dark' ? '#1f2937' : '#ffffff',
                   borderRight: 'none'
                 }}
-              />
-            </div>
-          )}
-
-          {subscriptionPrefs.includes('email') && (
-            <div className="space-y-2">
-              <label className={`block text-lg font-semibold ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
-                Email <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                placeholder="your.email@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`w-full h-[52px] px-4 text-base border rounded-xl transition-all duration-200 ${
-                  theme === 'dark' 
-                    ? 'border-gray-600 bg-gray-800 text-white placeholder-gray-400' 
-                    : 'border-gray-300 bg-white text-gray-900 placeholder-gray-500'
-                }`}
               />
             </div>
           )}
@@ -637,12 +717,12 @@ export default function Home() {
           {/* Header Section */}
           <div className="px-6 md:px-12 py-6 md:py-10 text-center">
             {/* Logo */}
-            <div className="flex items-center justify-center mb-6 gap-4">
-              <div className="bg-teal-900/70 rounded-2xl w-20 h-20 flex items-center justify-center">
-                <span className="text-white text-5xl font-bold tracking-wide">ME</span>
+            <div className="flex items-center justify-center mb-6 gap-2 sm:gap-4">
+              <div className="bg-teal-900/70 rounded-2xl flex items-center justify-center shadow-lg" style={{ width: 'clamp(4rem, 5vw, 5.7rem)', height: 'clamp(4rem, 5vw, 5.5rem)' }}>
+                <span className="text-custom-text font-bold tracking-tight" style={{ fontSize: 'clamp(2rem, 3vw, 3rem)' }}>ME</span>
               </div>
-              <h1 className={`text-4xl font-bold whitespace-nowrap ${
-                theme === 'dark' ? 'text-white' : 'text-gray-800'
+              <h1 className={`text-2xl sm:text-4xl font-bold whitespace-nowrap ${
+                theme === 'dark' ? 'text-white' : 'text-gray-700'
               }`}>
                 Median Edge
               </h1>
@@ -735,7 +815,7 @@ export default function Home() {
                 {popup.title === 'Terms of Service' ? (
                   <div>
                     <p className="mb-4"><strong>Last updated:</strong> December 2025</p>
-                    <p className="mb-4">By using Median Edge, you agree to these terms. We deliver market insights via WhatsApp and Telegram—no spam, just what matters. Reply with UNSUBSCRIBE anytime on your broadcast preference (WhatsApp, Telegram or Email) to stop broadcast.</p>
+                    <p className="mb-4">By using Median Edge, you agree to these terms. We deliver market insights via WhatsApp and Telegram—no spam, just what matters. Reply with STOP</p>
                     
                     <h4 className="text-teal-600 font-bold text-lg mb-3">Your Rights</h4>
                     <ul className="list-disc pl-10 mb-6 space-y-1">

@@ -8,8 +8,9 @@ export async function GET(request: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
       },
-    });
+      cache: 'no-store', 
 
+    });
     const result = await response.json();
 
     if (!response.ok) {

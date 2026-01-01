@@ -20,42 +20,61 @@ export async function POST(request: NextRequest) {
     }
     
     // Validate phone number for WhatsApp/Telegram
-    if ((body.subscriptionPrefs.includes('whatsapp') || body.subscriptionPrefs.includes('telegram')) && !body.phoneNumber) {
-      return NextResponse.json(
-        { error: 'Phone number is required for WhatsApp/Telegram subscription' },
-        { status: 400 }
-      )
+    if (body.subscriptionPrefs.includes('whatsapp') || body.subscriptionPrefs.includes('telegram')) {
+      if (!body.phoneNumber) {
+        return NextResponse.json(
+          { error: 'Phone number is required for WhatsApp/Telegram subscription' },
+          { status: 400 }
+        )
+      }
+      // Validate phone number format (more flexible for international numbers)
+      const phoneRegex = /^\+?[1-9]\d{7,14}$/
+      const cleanPhone = body.phoneNumber.replace(/\s|-|\(|\)/g, '')
+      if (!phoneRegex.test(cleanPhone)) {
+        return NextResponse.json(
+          { error: 'Please enter a valid phone number with country code' },
+          { status: 400 }
+        )
+      }
     }
 
     // Validate email for email preference
-    if (body.subscriptionPrefs.includes('email') && !body.email) {
-      return NextResponse.json(
-        { error: 'Email is required for email subscription' },
-        { status: 400 }
-      )
+    if (body.subscriptionPrefs.includes('email')) {
+      if (!body.email) {
+        return NextResponse.json(
+          { error: 'Email is required for email subscription' },
+          { status: 400 }
+        )
+      }
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(body.email)) {
+        return NextResponse.json(
+          { error: 'Please enter a valid email address' },
+          { status: 400 }
+        )
+      }
     }
 
-    // Transform data to match backend format
-    let channelPreference: 'whatsapp' | 'telegram' | 'both' | 'email'
+    // Transform data to match new backend format with boolean flags
+    const isWhatsapp = body.subscriptionPrefs.includes('whatsapp')
+    const isTelegram = body.subscriptionPrefs.includes('telegram')
+    const isEmail = body.subscriptionPrefs.includes('email')
+    
     let phoneNumber = body.phoneNumber
     
-    if (body.subscriptionPrefs.includes('email')) {
-      channelPreference = 'email'
-      // Use dummy phone number for email-only users
+    // Use dummy phone number for email-only users
+    if (isEmail && !isWhatsapp && !isTelegram) {
       phoneNumber = '+99900000000'
-    } else if (body.subscriptionPrefs.includes('whatsapp') && body.subscriptionPrefs.includes('telegram')) {
-      channelPreference = 'both'
-    } else if (body.subscriptionPrefs.includes('whatsapp')) {
-      channelPreference = 'whatsapp'
-    } else {
-      channelPreference = 'telegram'
     }
 
     const backendData = {
       preferredName: body.fullName || undefined,
       email: body.email || undefined,
-      phoneNumber: phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`,
-      channelPreference,
+      phoneNumber: phoneNumber ? (phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`) : '+99900000000',
+      isWhatsapp,
+      isTelegram,
+      isEmail,
       interests: body.selectedInterestIds
     }
     

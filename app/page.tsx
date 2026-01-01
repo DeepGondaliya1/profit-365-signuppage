@@ -224,9 +224,14 @@ export default function Home() {
   }
 
   const handleSubscriptionToggle = (pref: string) => {
-    // Only allow single selection
-    setSubscriptionPrefs([pref])
-    setStepErrors(prev => ({ ...prev, 2: '' }))
+    // Allow multiple selection
+    setSubscriptionPrefs(prev => {
+      const newPrefs = prev.includes(pref) 
+        ? prev.filter(p => p !== pref)
+        : [...prev, pref]
+      setStepErrors(prevErrors => ({ ...prevErrors, 2: '' }))
+      return newPrefs
+    })
   }
 
   const nextStep = () => {

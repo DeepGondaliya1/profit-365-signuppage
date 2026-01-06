@@ -290,7 +290,6 @@ export default function Home() {
         // Reset form fields
         setSelectedMarkets([])
         setSelectedInterestIds([])
-        setSubscriptionPrefs([])
         setPhoneNumber('')
         setEmail('')
         setFullName('')
@@ -579,11 +578,48 @@ export default function Home() {
             }`}>
               Welcome to Median Edge!
             </h2>
-            <p className={`text-lg ${
+            <p className={`text-lg mb-6 ${
               theme === 'dark' ? 'text-teal-400' : 'text-teal-700'
             }`}>
-              {successMessage}
+              You have successfully joined our free basic plan!
             </p>
+            
+            {/* Join Channel Buttons */}
+            {(subscriptionPrefs.includes('whatsapp') || subscriptionPrefs.includes('telegram')) && (
+              <div className="space-y-4">
+                <p className={`text-sm mb-4 ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                }`}>
+                  To activate messages based on your channel preference, click below and send a message to automatically start receiving updates:
+                </p>
+                
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  {subscriptionPrefs.includes('whatsapp') && (
+                    <a
+                      href="https://api.whatsapp.com/send/?phone=%2B14169895302&text=Hello%2C+I+would+like+to+join+your+free+Market+Insights+broadcast.&type=phone_number&app_absent=0"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-3 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-full font-medium transition-colors"
+                    >
+                      <FaWhatsapp className="text-xl" />
+                      Join WhatsApp
+                    </a>
+                  )}
+                  
+                  {subscriptionPrefs.includes('telegram') && (
+                    <a
+                      href="https://t.me/p365education_bot"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-3 bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-full font-medium transition-colors"
+                    >
+                      <FaTelegram className="text-xl" />
+                      Join Telegram
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )

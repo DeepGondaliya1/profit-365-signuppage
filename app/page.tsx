@@ -265,29 +265,67 @@ export default function Home() {
     setSubmitError('')
     
     try {
-      const formData = {
-        selectedMarkets,
-        selectedInterestIds,
-        subscriptionPrefs,
-        phoneNumber,
-        email,
-        fullName
-      }
-      
-      console.log('Form submitted with interest IDs:', formData)
-      
-      const response = await fetch('/api/signup', {
+      const checkUserResponse = await fetch('/api/check-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          email: subscriptionPrefs.includes('email') ? email : undefined,
+          phoneNumber: (subscriptionPrefs.includes('whatsapp') || subscriptionPrefs.includes('telegram')) ? phoneNumber : undefined
+        })
+      })
+      
+      const checkResult = await checkUserResponse.json()
+      
+      if (!checkUserResponse.ok) {
+        setSubmitError(checkResult.error || 'Failed to check user status')
+        return
+      }
+      
+      let apiEndpoint: string
+      let requestBody: any
+      
+      if (checkResult.exists) {
+        // User exists - update their details
+        apiEndpoint = '/api/update-user'
+        requestBody = {
+          email: subscriptionPrefs.includes('email') ? email : undefined,
+          phoneNumber: (subscriptionPrefs.includes('whatsapp') || subscriptionPrefs.includes('telegram')) ? phoneNumber : undefined,
+          preferredName: fullName,
+          interests: selectedInterestIds,
+          isWhatsapp: subscriptionPrefs.includes('whatsapp'),
+          isTelegram: subscriptionPrefs.includes('telegram'),
+          isEmail: subscriptionPrefs.includes('email')
+        }
+      } else {
+        // New user - create signup
+        apiEndpoint = '/api/signup'
+        requestBody = {
+          selectedMarkets,
+          selectedInterestIds,
+          subscriptionPrefs,
+          phoneNumber,
+          email,
+          fullName
+        }
+      }
+      
+      const response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
       })
       
       const result = await response.json()
       
       if (response.ok) {
-        setSuccessMessage(result.message || 'Signup successful! Welcome to Median Edge.')
+        // Set different messages based on user type
+        const message = checkResult.exists 
+          ? (result.message || 'Your preferences and interest have been updated successfully!')
+          : (result.message || 'Signup successful! Welcome to Median Edge.')
+        
+        setSuccessMessage(message)
         setSubmitSuccess(true)
-        // Reset form fields
+        // Reset form fields but keep subscriptionPrefs for success page
         setSelectedMarkets([])
         setSelectedInterestIds([])
         setPhoneNumber('')
@@ -581,7 +619,7 @@ export default function Home() {
             <p className={`text-lg mb-6 ${
               theme === 'dark' ? 'text-teal-400' : 'text-teal-700'
             }`}>
-              You have successfully joined our free basic plan!
+              {successMessage}
             </p>
             
             {/* Join Channel Buttons */}

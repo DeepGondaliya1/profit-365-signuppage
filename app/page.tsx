@@ -646,7 +646,7 @@ export default function Home() {
                   
                   {subscriptionPrefs.includes('telegram') && (
                     <a
-                      href="https://t.me/p365education_bot"
+                      href="https://t.me/MedianEdge_bot"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-3 bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-full font-medium transition-colors"
